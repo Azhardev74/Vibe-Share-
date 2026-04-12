@@ -11,7 +11,7 @@ connectDB();
 
 const PORT = process.env.PORT || 2999;
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: ["http://localhost:5173", "https://vibe-share.netlify.app"],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true
 }))
