@@ -19,19 +19,26 @@ export default function Profile() {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
+
     if (storedUser) {
-      const parsed = JSON.parse(storedUser);
-      setUser(parsed);
-      setFormData({
-        userName: parsed.userName || "",
-        email: parsed.email || "",
-        profilePic: parsed.profilePic || "",
-        bio: parsed.bio || "",
-        password: ""
-      });
+      try {
+        const parsed = JSON.parse(storedUser);
+        setUser(parsed);
+
+        setFormData({
+          userName: parsed.userName || "",
+          email: parsed.email || "",
+          profilePic: parsed.profilePic || "",
+          bio: parsed.bio || "",
+          password: ""
+        });
+
+      } catch (error) {
+        console.error("Invalid JSON in localStorage", error);
+        localStorage.removeItem("user"); // cleanup
+      }
     }
   }, []);
-
   const handleChange = (e) => {
     setFormData({
       ...formData,
@@ -175,7 +182,7 @@ export default function Profile() {
 
       {/* Posts Grid */}
       <div className="grid grid-cols-3 gap-1 md:gap-2">
-        {[1,2,3,4,5,6].map((item) => (
+        {[1, 2, 3, 4, 5, 6].map((item) => (
           <div key={item} className="bg-gray-200 aspect-square"></div>
         ))}
       </div>
