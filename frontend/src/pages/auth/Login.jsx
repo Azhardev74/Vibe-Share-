@@ -13,7 +13,7 @@ import API from "../../lib/api";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
 
-export function Login() {
+export default function Login() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 

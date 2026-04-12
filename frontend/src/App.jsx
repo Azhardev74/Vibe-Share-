@@ -1,7 +1,7 @@
 import React from "react"
 import { BrowserRouter, Routes, Route } from "react-router-dom"
 
-import { Login } from "./pages/auth/login"
+import Login from "./pages/auth/login"
 import SignUp from "./pages/auth/SignUp"
 import Navigation from "./pages/Navigation"
 import Profile from "./pages/Profile"
@@ -20,7 +20,7 @@ export default function App() {
 
             {/* 🔐 Protected Routes Group */}
             <Route element={<ProtectedRoutes />}>
-            <Route path="/" element={<Home />} />
+              <Route path="/" element={<Home />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/feed" element={<Feed />} />
             </Route>
