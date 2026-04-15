@@ -6,12 +6,18 @@ const postSchema = mongoose.Schema({
         ref: "User",
         required: true,
     },
+    title: {
+        type: String,
+        required: [true, "Title is required"],
+    },
     image: {
         type: String,
-        required: true,
+        default: "",
+
     },
     caption: {
         type: String,
+        default: "",
     },
     likes: [
         { type: mongoose.Schema.Types.ObjectId, ref: "User" }

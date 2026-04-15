@@ -20,7 +20,7 @@ export default function Signup() {
           "Content-Type": "multipart/form-data"
         }
       })
-      localStorage.setItem("user", res.data.user);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
       localStorage.setItem("token", res.data.token);
       console.log("Success: ", res.data);
       form.reset();
