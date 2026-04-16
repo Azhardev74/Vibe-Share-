@@ -1,12 +1,6 @@
+import cloudinary from "../config/cloudinary.js";
 import streamifier from "streamifier";
-import { v2 as cloudinary } from "cloudinary";
 import Post from "../models/post.js";
-
-cloudinary.config({
-    cloud_name: "dxqjk3sk1",
-    api_key: 968344377257183,
-    api_secret: "6OQwz7KPuvb254BA11mNq2E7Z6M",
-});
 
 const postsController = async (req, res) => {
     try {
@@ -17,6 +11,7 @@ const postsController = async (req, res) => {
                 message: "Title is required"
             })
         }
+
         let imageUrl = "";
         if (req.file) {
             const result = await new Promise((resolve, reject) => {
@@ -53,7 +48,8 @@ const postsController = async (req, res) => {
 
 const getPostsController = async (req, res) => {
     try {
-        const posts = await Post.find().populate("user", "userName profilePic");
+        // console.log()
+        const posts = await Post.find({ user: req.user.userId }).populate("user", "userName profilePic");
         res.status(200).json({
             message: "Posts fetched successfully",
             posts
@@ -67,4 +63,27 @@ const getPostsController = async (req, res) => {
     }
 };
 
-export { postsController, getPostsController };
+const globalFeedController = async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = 10;
+        const feed = await Post.find()
+            .populate("user", "userName profilePic")
+            .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit);
+
+        res.status(200).json({
+            message: "Global feed fetched successfully",
+            feed
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            message: "Error fetching global feed",
+            error: error.message
+        });
+    }
+}
+
+export { postsController, getPostsController, globalFeedController };

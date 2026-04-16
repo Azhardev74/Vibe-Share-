@@ -1,16 +1,8 @@
 import bcrypt from "bcryptjs";
 import User from "../models/user.js";
 import jwt from "jsonwebtoken";
+import cloudinary from "../config/cloudinary.js";
 import streamifier from "streamifier";
-// import cloudinary from "../config/cloudinary.js";
-
-import { v2 as cloudinary } from "cloudinary";
-
-cloudinary.config({
-  cloud_name: "dxqjk3sk1",
-  api_key: 968344377257183,
-  api_secret: "6OQwz7KPuvb254BA11mNq2E7Z6M",
-});
 
 
 const generateToken = (user) => {

@@ -7,31 +7,28 @@ import Navigation from "./pages/Navigation"
 import Profile from "./pages/Profile"
 import Feed from "./pages/Feed"
 
-import { SidebarProvider } from "./components/ui/sidebar"
 import ProtectedRoutes from "./routes/ProtectedRoutes"
 import Home from "./pages/Home"
 
 export default function App() {
   return (
     <BrowserRouter>
-      <SidebarProvider>
         <Navigation>
           <Routes>
 
             {/* 🔐 Protected Routes Group */}
             <Route element={<ProtectedRoutes />}>
-              <Route path="/" element={<Home />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/feed" element={<Feed />} />
             </Route>
 
             {/* 🌐 Public Routes */}
+            <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<SignUp />} />
 
           </Routes>
         </Navigation>
-      </SidebarProvider>
     </BrowserRouter>
   )
 }

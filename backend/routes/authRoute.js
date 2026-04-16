@@ -8,7 +8,7 @@ const authRouter = express.Router();
 authRouter.post("/signup",upload.single("profilePic"), registerUser);
 authRouter.post("/login", loginUser);
 authRouter.get("/profile", protect, getUserProfile)
-authRouter.put("/profile", protect, updateUserProfile);
+authRouter.put("/profile", protect, upload.single("profilePic"), updateUserProfile);
 // authRouter.delete("/profile/logout", protect, logoutProfile);
 
 export { authRouter };
