@@ -1,19 +1,20 @@
+import cloudinary from "../config/cloudinary.js";
+import streamifier from "streamifier";
 import bcrypt from "bcryptjs";
 import User from "../models/user.js";
 import jwt from "jsonwebtoken";
-import cloudinary from "../config/cloudinary.js";
-import streamifier from "streamifier";
+
 
 
 const generateToken = (user) => {
-    return jwt.sign(
-        {
-            userId: user._id,
-            email: user.email
-        },
-        process.env.SECRET_KEY,
-        { expiresIn: process.env.EXPIRES_IN }
-    );
+  return jwt.sign(
+    {
+      userId: user._id,
+      email: user.email
+    },
+    process.env.SECRET_KEY,
+    { expiresIn: process.env.EXPIRES_IN }
+  );
 };
 
 const registerUser = async (req, res) => {
@@ -87,43 +88,43 @@ const registerUser = async (req, res) => {
   }
 };
 const loginUser = async (req, res) => {
-    try {
-        let { email, password } = req.body;
+  try {
+    let { email, password } = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({ message: "Email & password required" });
-        }
-
-        email = email.toLowerCase();
-
-        const user = await User.findOne({ email });
-
-        if (!user) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
-
-        const isMatch = await bcrypt.compare(password, user.password);
-
-        if (!isMatch) {
-            return res.status(401).json({ message: "Invalid credentials" });
-        }
-
-        const token = generateToken(user);
-
-        return res.status(200).json({
-            user: {
-                _id: user._id,
-                userName: user.userName,
-                email: user.email,
-                profilePic: user.profilePic,
-                bio: user.bio
-            },
-            token: `Bearer ${token}`
-        });
-
-    } catch (error) {
-        return res.status(500).json({ message: "Internal Server Error" });
+    if (!email || !password) {
+      return res.status(400).json({ message: "Email & password required" });
     }
+
+    email = email.toLowerCase();
+
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(401).json({ message: "Invalid credentials" });
+    }
+
+    const token = generateToken(user);
+
+    return res.status(200).json({
+      user: {
+        _id: user._id,
+        userName: user.userName,
+        email: user.email,
+        profilePic: user.profilePic,
+        bio: user.bio
+      },
+      token: `Bearer ${token}`
+    });
+
+  } catch (error) {
+    return res.status(500).json({ message: "Internal Server Error" });
+  }
 };
 
 export { registerUser, loginUser };
