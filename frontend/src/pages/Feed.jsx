@@ -3,7 +3,7 @@ import API from "../lib/api.js"
 import CreatePost from "../components/ux/CreatePost"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
-import { Button } from "@/components/ui/Button"
+import { Button } from "@/components/ui/button"
 import { useNavigate } from "react-router-dom"
 
 export default function Feed() {
