@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import API from "../../lib/api";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 import { useState } from "react";
 
 export default function Login() {
@@ -19,6 +20,11 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    const toastId = toast.loading("Logging in...", {
+      position: "bottom-center",
+    }
+    )
 
     const form = e.currentTarget;
 
@@ -44,6 +50,7 @@ export default function Login() {
       // ✅ Optional: save user (good for UI)
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
+      toast.success("Login successful!", { id: toastId }); // ✅ update same toast
       console.log("Login Success:", res.data);
 
       // ✅ Reset form
@@ -53,12 +60,12 @@ export default function Login() {
       navigate("/");
 
     } catch (error) {
-      console.error("Login Error:", error.response?.data || error.message);
+      const message =
 
-      alert(
-        error.response?.data?.message ||
-        "Login failed. Please check credentials."
-      );
+        error.response?.data?.message || "Failed to load feed"
+
+      // ❌ error update (same toast)
+      toast.error(message, { id: toastId })
     } finally {
       setLoading(false);
     }
@@ -76,6 +83,7 @@ export default function Login() {
           <CardAction>
             <Button
               variant="link"
+              className="px-0 text-blue-600 hover:underline"
               onClick={() => navigate("/signup")}
             >
               Sign Up
