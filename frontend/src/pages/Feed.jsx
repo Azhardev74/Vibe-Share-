@@ -4,7 +4,6 @@ import CreatePost from "../components/ux/CreatePost"
 import { toast } from "sonner"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Button } from "@/components/ui/Button"
-import { Spinner } from "@/components/ui/Spinner"
 import { useNavigate } from "react-router-dom"
 
 export default function Feed() {
@@ -53,7 +52,7 @@ export default function Feed() {
       {form && <CreatePost onClose={() => setForm(false)} />}
 
       {/* POST BUTTON */}
-      <button
+      <Button
         onClick={() => {
           token ? setForm(true) : navigate("/login");
         }}
@@ -61,18 +60,11 @@ export default function Feed() {
         bg-red-600 text-white py-3 px-6 w-24 rounded-xl text-lg shadow-lg"
       >
         Post
-      </button>
+      </Button>
 
       <div className="max-w-xl mx-auto py-6 px-3 space-y-6">
 
         <h1 className="text-lg font-semibold">Home</h1>
-
-        {/* 🔥 SHOW SPINNER ONLY WHEN LOADING */}
-        {loading && (
-          <div className="flex justify-center py-4">
-            <Spinner />
-          </div>
-        )}
 
         {/* 🔥 SKELETON LOADING */}
         {loading && (
