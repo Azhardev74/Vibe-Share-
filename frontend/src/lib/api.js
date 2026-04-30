@@ -1,8 +1,8 @@
 import axios from "axios";
 
 const API = axios.create({
-    // baseURL: "http://localhost:3000/api",
-    baseURL: "https://vibe-share-ylt8.onrender.com/api",
+    baseURL: "http://localhost:3000/api",
+    // baseURL: "https://vibe-share-ylt8.onrender.com/api",
 });
 
 // Attach token automatically

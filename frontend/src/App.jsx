@@ -13,22 +13,22 @@ import Home from "./pages/Home"
 export default function App() {
   return (
     <BrowserRouter>
-        <Navigation>
-          <Routes>
+      <Navigation>
+        <Routes>
 
-            {/* 🔐 Protected Routes Group */}
-            <Route element={<ProtectedRoutes />}>
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/feed" element={<Feed />} />
-            </Route>
-
-            {/* 🌐 Public Routes */}
+          {/* 🔐 Protected Routes Group */}
+          <Route element={<ProtectedRoutes />}>
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/feed" element={<Feed />} />
             <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<SignUp />} />
+          </Route>
 
-          </Routes>
-        </Navigation>
+          {/* 🌐 Public Routes */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/signup" element={<SignUp />} />
+
+        </Routes>
+      </Navigation>
     </BrowserRouter>
   )
 }

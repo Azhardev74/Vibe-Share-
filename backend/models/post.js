@@ -20,7 +20,11 @@ const postSchema = mongoose.Schema({
         default: "",
     },
     likes: [
-        { type: mongoose.Schema.Types.ObjectId, ref: "User" }
+        {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: "User",
+            default: [],
+        }
     ],
     comments: [
         {
@@ -41,7 +45,7 @@ const postSchema = mongoose.Schema({
 
 },
     { timestamps: true })
-
+postSchema.index({ createdAt: -1 });
 const Post = mongoose.model("Post", postSchema)
 
 export default Post;

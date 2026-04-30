@@ -1,16 +1,18 @@
 import React from "react"
 import FormBuilder from "../common/FormBuilder.jsx"
 import API from "../../lib/api.js"
+import { toast } from "sonner"
 
 export default function CreatePost({ onClose }) {
 
   const fields = [
-    { name: "title", label: "Title", placeholder: "What's on your mind?" },
-    { name: "image", label: "Image", type: "file" },
-    { name: "caption", label: "Caption", type: "textarea", placeholder: "Add a caption..." },
+    { name: "title", label: "Title", placeholder: "What's on your mind?", required: true },
+    { name: "image", label: "Image", type: "file", required: false },
+    { name: "caption", label: "Caption", type: "textarea", placeholder: "Add a caption...", required: true },
   ]
-
   const handleSubmit = async (data) => {
+    const toastId = toast.loading("Posting...")
+
     const formData = new FormData()
     formData.append("title", data.title)
     formData.append("caption", data.caption)
@@ -20,17 +22,19 @@ export default function CreatePost({ onClose }) {
     }
 
     try {
-      const res = await API.post("/post", formData, {
+      await API.post("/post", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       })
 
-      console.log("Post created:", res.data)
-      onClose() // ✅ close modal after submit
+      toast.success("Post created!", { id: toastId })
+
+      onClose() // close modal
+
     } catch (err) {
-      console.error("Error creating post:", err)
+      console.log(err)
+      toast.error("Failed to create post", { id: toastId })
     }
   }
-
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
 

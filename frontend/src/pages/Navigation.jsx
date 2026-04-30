@@ -1,6 +1,5 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useEffect, useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { Toaster } from "@/components/ui/sonner"
 
 import {
@@ -11,26 +10,6 @@ import {
 } from "@/components/ui/navigation-menu"
 
 export default function Navigation({ children }) {
-  const [isLoggedIn, setIsLoggedIn] = useState(false)
-  const navigate = useNavigate()
-
-  const loadAuth = () => {
-    const token = localStorage.getItem("token")
-    setIsLoggedIn(!!token)
-  }
-
-  useEffect(() => {
-    loadAuth()
-    window.addEventListener("storage", loadAuth)
-    return () => window.removeEventListener("storage", loadAuth)
-  }, [])
-
-  const handleLogout = () => {
-    localStorage.clear()
-    setIsLoggedIn(false)
-    navigate("/login")
-  }
-
   return (
     <>
       {/* NAVBAR */}
@@ -54,53 +33,26 @@ export default function Navigation({ children }) {
               </NavigationMenuLink>
             </NavigationMenuItem>
 
-            {isLoggedIn && (
-              <NavigationMenuItem>
-                <NavigationMenuLink asChild>
-                  <Link to="/profile">Profile</Link>
-                </NavigationMenuLink>
-              </NavigationMenuItem>
-            )}
+            <NavigationMenuItem>
+              <NavigationMenuLink asChild>
+                <Link to="/profile">Profile</Link>
+              </NavigationMenuLink>
+            </NavigationMenuItem>
 
-            {!isLoggedIn ? (
-              <>
-                <NavigationMenuItem>
-                  <NavigationMenuLink asChild>
-                    <Link to="/login">Login</Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-
-                <NavigationMenuItem>
-                  <NavigationMenuLink asChild>
-                    <Link to="/signup">Signup</Link>
-                  </NavigationMenuLink>
-                </NavigationMenuItem>
-              </>
-            ) : (
-              <NavigationMenuItem>
-                <button onClick={handleLogout} className="text-red-400">
-                  Logout
-                </button>
-              </NavigationMenuItem>
-            )}
 
           </NavigationMenuList>
         </NavigationMenu>
       </div>
 
-      
+
       {/* MAIN */}
       <main className="pt-20 bg-gray-50 min-h-screen">
         <Toaster
-        // position="top-center"
-        // offset="120px"
-        // expand={false}
-        // closeButton
-        // visibleToasts={1}
-        className="z-[9999]"
-      />
+          closeButton
+          className="z-[9999]"
+        />
         {children}
-        
+
       </main>
     </>
   )
