@@ -1,148 +1,91 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import API from "../../lib/api";
 
-export default function CommentCard({
-  postId,
-  comments = [],
-  onClose,
-  socket,
-  user,
-}) {
+export default function CommentCard({ postId, comments = [], onClose, user, onOptimisticAdd, onRollback }) {
   const [text, setText] = useState("");
-  const [localComments, setLocalComments] = useState(comments);
   const [posting, setPosting] = useState(false);
 
-  // 🔥 SYNC COMMENTS FROM PARENT
-  useEffect(() => {
-    setLocalComments(comments);
-  }, [comments]);
-
-  // 🔥 SOCKET LISTENER (SAFE CLEANUP)
-  useEffect(() => {
-    if (!socket) return;
-
-    const handleCommentAdded = (data) => {
-      if (data.postId !== postId) return;
-
-      setLocalComments((prev) => {
-        // 🔥 Replace temp comment if clientId matches
-        if (data.clientId) {
-          const updated = prev.map((c) =>
-            c._id === data.clientId ? data.comment : c
-          );
-
-          const exists = updated.some((c) => c._id === data.comment._id);
-          if (!exists) updated.push(data.comment);
-
-          return updated;
-        }
-
-        // 🔥 Avoid duplicates
-      const exists = prev.some((c) => c._id === data.comment._id);
-if (exists) return prev;
-
-        return [...prev, data.comment];
-      });
-    };
-
-    socket.on("commentAdded", handleCommentAdded);
-
-    return () => {
-      socket.off("commentAdded", handleCommentAdded);
-    };
-  }, [socket, postId]);
-
-  // 🔥 SUBMIT COMMENT
   const handleSubmit = async () => {
     const trimmed = text.trim();
+    if (!trimmed || posting || trimmed.length > 300) return;
 
-    if (!trimmed || posting) return;
-    if (trimmed.length > 300) return; // limit
-
-    const tempId = "temp-" + Date.now();
-
+    const tempId = `temp-${Date.now()}`;
     const newComment = {
       _id: tempId,
-      user,
+      user, // The current logged-in user object
       text: trimmed,
       createdAt: new Date().toISOString(),
       pending: true,
     };
 
-    // ✅ Optimistic UI
-    setLocalComments((prev) => [...prev, newComment]);
+    // 1. Tell parent to add it immediately
+    onOptimisticAdd(postId, newComment);
     setText("");
     setPosting(true);
 
     try {
-      await API.post(`/posts/${postId}/comment`, {
+       await API.post(`/posts/${postId}/comment`, {
         text: trimmed,
         clientId: tempId,
       });
+    // eslint-disable-next-line no-unused-vars
     } catch (err) {
-      // 🔴 Rollback on failure
-      setLocalComments((prev) =>
-        prev.filter((c) => c._id !== tempId)
-      );
-      console.error("Comment failed:", err);
+      // 2. Rollback if server fails
+      onRollback(postId, tempId);
     } finally {
       setPosting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black/40 flex justify-center items-end z-50">
-      <div className="bg-white w-full max-w-md rounded-t-2xl p-4 h-[70vh] flex flex-col">
+    <div className="fixed inset-0 bg-black/60 flex justify-center items-end z-50 backdrop-blur-sm" onClick={onClose}>
+      <div 
+        className="bg-white w-full max-w-md rounded-t-2xl p-4 h-[80vh] flex flex-col shadow-2xl" 
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4" />
         
-        {/* HEADER */}
-        <div className="flex justify-between items-center mb-3">
-          <h2 className="font-semibold">Comments</h2>
-          <button onClick={onClose}>✖</button>
+        <div className="flex justify-between items-center mb-4 border-b pb-2">
+          <h2 className="font-bold text-lg">Comments</h2>
+          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">✕</button>
         </div>
 
-        {/* COMMENTS */}
-        <div className="flex-1 overflow-y-auto space-y-3">
-          {localComments.map((c) => (
-            <div key={c._id} className="flex gap-2 items-start">
-              <img
-                src={c.user?.profilePic || "Unknown User"}
-                alt="user"
-                className="w-8 h-8 rounded-full object-cover"
-              />
-
+        {/* SCROLLABLE COMMENTS AREA */}
+        <div className="flex-1 overflow-y-auto space-y-4 px-1">
+          {comments.map((c) => (
+            <div key={c._id} className={`flex gap-3 items-start ${c.pending ? 'opacity-50' : ''}`}>
+              <img src={c.user?.profilePic} className="w-9 h-9 rounded-full object-cover border" alt="" />
+              {console.log(c)}
               <div>
                 <p className="text-sm">
-                  <span className="font-semibold mr-1">
-                    {c.user?.userName  || "Unknown"}
-                  </span>
+                  <span className="font-bold mr-2">{c.user?.userName}</span>
                   {c.text}
                 </p>
-
-                <p className="text-xs text-gray-400">
-                  {new Date(c.createdAt).toLocaleString()}
-                  {c.pending && " • sending..."}
+                <p className="text-[10px] text-gray-400 mt-1">
+                  {new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  {c.pending && " • Sending..."}
                 </p>
               </div>
             </div>
           ))}
         </div>
 
-        {/* INPUT */}
-        <div className="flex gap-2 mt-3">
+        {/* INPUT SECTION */}
+        <div className="border-t pt-3 mt-2 flex gap-3 items-center">
+          <img src={user?.profilePic} className="w-9 h-9 rounded-full hidden sm:block" alt="" />
           <input
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Write a comment..."
-            maxLength={300}
-            className="flex-1 border rounded-lg px-3 py-2 text-sm"
+            placeholder="Add a comment..."
+            className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm focus:outline-none"
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
           />
-
-          <button
-            onClick={handleSubmit}
-            disabled={posting}
-            className="bg-black text-white px-4 rounded-lg disabled:opacity-50"
+          <button 
+            onClick={handleSubmit} 
+            disabled={!text.trim() || posting}
+            className="text-blue-500 font-bold text-sm disabled:opacity-30"
           >
-            {posting ? "Posting..." : "Post"}
+            Post
           </button>
         </div>
       </div>

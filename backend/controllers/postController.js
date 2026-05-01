@@ -66,7 +66,7 @@ const postsController = async (req, res) => {
 const getPostsController = async (req, res) => {
     try {
         // console.log()
-        const posts = await Post.find({ user: req.user.userId }).populate("user", "userName profilePic");
+        const posts = await Post.find({ user: req.user.userId }).populate("user", "userName profilePic").lean();
         const userId = req.user.userId;
         console.log(userId)
         // console.log(posts)
@@ -182,48 +182,33 @@ const commentController = async (req, res) => {
         const userId = req.user.userId;
         const { text, clientId } = req.body;
 
-        if (!text?.trim()) {
-            return res.status(400).json({
-                message: "Comment text is required"
-            });
-        }
+        if (!text?.trim()) return res.status(400).json({ message: "Comment required" });
 
-        // ✅ push comment
-        await Post.findByIdAndUpdate(postId, {
-            $push: {
-                comments: {
-                    user: userId,
-                    text,
-                    createdAt: new Date(),
-                    clientId
-                }
-            }
-        });
+        // Atomic push and return the updated post with one query
+        const updatedPost = await Post.findByIdAndUpdate(
+            postId,
+            { 
+                $push: { 
+                    comments: { user: userId, text, createdAt: new Date(), clientId } 
+                } 
+            },
+            { new: true } // Returns the document AFTER update
+        ).populate("comments.user", "userName profilePic");
 
-        // ✅ FETCH ONLY LAST COMMENT (POPULATED)
-        const post = await Post.findById(postId)
-            .populate("comments.user", "userName profilePic");
+        const newComment = updatedPost.comments.at(-1); // Get the newly added one
 
-        const newComment = post.comments.at(-1);
-
-        // 🔥 emit populated comment
+        // Emit to all users
         io.emit("commentAdded", {
             postId,
             comment: newComment,
             clientId
         });
 
-        return res.status(201).json({
-            message: "Comment added successfully",
-            comment: newComment
-        });
-
+        res.status(201).json({ comment: newComment });
     } catch (error) {
-        return res.status(500).json({
-            message: "Error in comment",
-            error: error.message
-        });
+        res.status(500).json({ error: error.message });
     }
 };
+
 
 export { postsController, getPostsController, LikeController, commentController, globalFeedController };
