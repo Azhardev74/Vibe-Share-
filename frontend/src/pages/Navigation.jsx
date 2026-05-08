@@ -36,9 +36,6 @@ import {
 
 export default function Navigation() {
 
-  // =========================
-  // STATES
-  // =========================
   const [token, setToken] = useState(
     localStorage.getItem("token")
   );
@@ -73,9 +70,6 @@ export default function Navigation() {
     }
   })();
 
-  // =========================
-  // AUTH SYNC
-  // =========================
   useEffect(() => {
 
     const checkAuth = () => {
@@ -93,9 +87,6 @@ export default function Navigation() {
 
   }, []);
 
-  // =========================
-  // AUTO FOCUS SEARCH INPUT
-  // =========================
   useEffect(() => {
 
     if (!open) return;
@@ -106,9 +97,6 @@ export default function Navigation() {
 
   }, [open]);
 
-  // =========================
-  // CLEAR SEARCH ON CLOSE
-  // =========================
   useEffect(() => {
 
     if (!open) {
@@ -119,9 +107,6 @@ export default function Navigation() {
 
   }, [open]);
 
-  // =========================
-  // SEARCH USERS
-  // =========================
   const searchUsers = async (value) => {
 
     try {
@@ -149,9 +134,6 @@ export default function Navigation() {
     }
   };
 
-  // =========================
-  // DEBOUNCE SEARCH
-  // =========================
   useEffect(() => {
 
     clearTimeout(debounceRef.current);
@@ -171,9 +153,6 @@ export default function Navigation() {
 
   }, [query]);
 
-  // =========================
-  // LOGOUT
-  // =========================
   const handleLogout = () => {
 
     try {
@@ -201,18 +180,12 @@ export default function Navigation() {
     }
   };
 
-  // =========================
-  // ACTIVE LINK
-  // =========================
   const isActive = (path) => {
     return location.pathname === path;
   };
 
   return (
     <>
-      {/* =========================
-          NAVBAR
-      ========================== */}
       <nav className="
         fixed top-0 left-0 z-50
         w-full
@@ -223,34 +196,26 @@ export default function Navigation() {
 
         <div className="
           max-w-7xl mx-auto
-          px-4 py-3
-          flex items-center justify-between
+          px-3 sm:px-4 py-3
+          flex flex-wrap items-center justify-between
+          gap-2
         ">
 
-          {/* =========================
-              LOGO
-          ========================== */}
           <Link
             to="/"
-            className="flex items-center text-2xl font-extrabold tracking-tight"
+            className="flex items-center gap-1 text-lg sm:text-2xl font-extrabold tracking-tight"
           >
             <span>Vibe</span>
 
-            <span className="text-red-500 ml-1">
+            <span className="text-red-500">
               Share
             </span>
           </Link>
 
-          {/* =========================
-              NAVIGATION
-          ========================== */}
           <NavigationMenu>
 
-            <NavigationMenuList className="flex items-center gap-2">
+            <NavigationMenuList className="flex flex-wrap items-center justify-end gap-1 sm:gap-2 min-w-0">
 
-              {/* =========================
-                  SEARCH MODAL
-              ========================== */}
               <NavigationMenuItem>
 
                 <Dialog
@@ -267,6 +232,7 @@ export default function Navigation() {
                         rounded-full
                         hover:bg-zinc-800
                         text-white
+                        p-2
                       "
                     >
                       <Search className="w-5 h-5" />
@@ -467,9 +433,6 @@ export default function Navigation() {
                 </Dialog>
               </NavigationMenuItem>
 
-              {/* =========================
-                  HOME
-              ========================== */}
               <NavigationMenuItem>
 
                 <NavigationMenuLink asChild>
@@ -477,8 +440,10 @@ export default function Navigation() {
                   <Link
                     to="/"
                     className={`
-                      flex items-center gap-2
-                      px-4 py-2 rounded-full
+                      flex items-center gap-1 sm:gap-2
+                      px-2 py-2 sm:px-3 sm:py-2
+                      text-xs sm:text-sm
+                      rounded-full
                       transition
                       ${isActive("/")
                         ? "bg-zinc-800 text-white"
@@ -495,9 +460,6 @@ export default function Navigation() {
                 </NavigationMenuLink>
               </NavigationMenuItem>
 
-              {/* =========================
-                  PROFILE
-              ========================== */}
               {token && (
 
                 <NavigationMenuItem>
@@ -507,8 +469,10 @@ export default function Navigation() {
                     <Link
                       to="/profile"
                       className={`
-                        flex items-center gap-2
-                        px-4 py-2 rounded-full
+                        flex items-center gap-1 sm:gap-2
+                        px-2 py-2 sm:px-3 sm:py-2
+                        text-xs sm:text-sm
+                        rounded-full
                         transition
                         ${isActive("/profile")
                           ? "bg-zinc-800 text-white"
@@ -542,9 +506,6 @@ export default function Navigation() {
                 </NavigationMenuItem>
               )}
 
-              {/* =========================
-                  AUTH BUTTON
-              ========================== */}
               <NavigationMenuItem>
 
                 {token ? (
@@ -555,7 +516,10 @@ export default function Navigation() {
                     className="
                       bg-red-600 hover:bg-red-700
                       rounded-full
+                      px-2 py-2 sm:px-3 sm:py-2
+                      text-xs sm:text-sm
                       text-white
+                      min-w-[2.5rem]
                     "
                   >
 
@@ -568,8 +532,10 @@ export default function Navigation() {
                     ) : (
 
                       <>
-                        <LogOut className="w-4 h-4 mr-2" />
-                        Logout
+                        <LogOut className="w-4 h-4 sm:mr-2" />
+                        <span className="hidden sm:inline">
+                          Logout
+                        </span>
                       </>
                     )}
                   </Button>
@@ -583,9 +549,17 @@ export default function Navigation() {
                         rounded-full
                         bg-white text-black
                         hover:bg-zinc-200
+                        px-2 py-2 sm:px-3 sm:py-2
+                        text-xs sm:text-sm
+                        min-w-[2.5rem]
                       "
                     >
-                      Login
+                      <span className="hidden sm:inline">
+                        Login
+                      </span>
+                      <span className="sm:hidden">
+                        <User className="w-4 h-4" />
+                      </span>
                     </Button>
 
                   </Link>
@@ -596,9 +570,6 @@ export default function Navigation() {
         </div>
       </nav>
 
-      {/* =========================
-          MAIN CONTENT
-      ========================== */}
       <main
         className="
           pt-20
