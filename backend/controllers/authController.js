@@ -79,7 +79,7 @@ const registerUser = async (req, res) => {
         profilePic: user.profilePic,
         bio: user.bio
       },
-      token: `Bearer ${token}`
+      token
     });
 
   } catch (error) {
@@ -119,7 +119,7 @@ const loginUser = async (req, res) => {
         profilePic: user.profilePic,
         bio: user.bio
       },
-      token: `Bearer ${token}`
+      token
     });
 
   } catch (error) {

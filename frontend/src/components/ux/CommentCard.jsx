@@ -1,92 +1,428 @@
-import { useState } from "react";
+import {
+  useState,
+  useCallback,
+  useMemo,
+} from "react";
+
+import {
+  Loader2,
+  SendHorizontal,
+} from "lucide-react";
+
 import API from "../../lib/api";
 
-export default function CommentCard({ postId, comments = [], onClose, user, onOptimisticAdd, onRollback }) {
-  const [text, setText] = useState("");
-  const [posting, setPosting] = useState(false);
+import { toast } from "sonner";
 
-  const handleSubmit = async () => {
-    const trimmed = text.trim();
-    if (!trimmed || posting || trimmed.length > 300) return;
+export default function CommentCard({
+  postId,
+  comments = [],
+  onClose,
+  user,
+  onOptimisticAdd,
+  onRollback,
+}) {
 
-    const tempId = `temp-${Date.now()}`;
-    const newComment = {
-      _id: tempId,
-      user, // The current logged-in user object
-      text: trimmed,
-      createdAt: new Date().toISOString(),
-      pending: true,
-    };
+  // =========================
+  // STATES
+  // =========================
+  const [text, setText] =
+    useState("");
 
-    // 1. Tell parent to add it immediately
-    onOptimisticAdd(postId, newComment);
-    setText("");
-    setPosting(true);
+  const [posting, setPosting] =
+    useState(false);
 
-    try {
-       await API.post(`/posts/${postId}/comment`, {
+  // =========================
+  // SORT COMMENTS
+  // =========================
+  const sortedComments =
+    useMemo(() => {
+
+      return [...comments].sort(
+        (a, b) =>
+          new Date(a.createdAt) -
+          new Date(b.createdAt)
+      );
+
+    }, [comments]);
+
+  // =========================
+  // SUBMIT COMMENT
+  // =========================
+  const handleSubmit =
+    useCallback(async () => {
+
+      const trimmed =
+        text.trim();
+
+      if (
+        !trimmed ||
+        posting ||
+        trimmed.length > 300
+      ) {
+        return;
+      }
+
+      // =========================
+      // TEMP COMMENT
+      // =========================
+      const tempId =
+        `temp-${Date.now()}`;
+
+      const optimisticComment = {
+        _id: tempId,
         text: trimmed,
-        clientId: tempId,
-      });
-    // eslint-disable-next-line no-unused-vars
-    } catch (err) {
-      // 2. Rollback if server fails
-      onRollback(postId, tempId);
-    } finally {
-      setPosting(false);
-    }
+        createdAt:
+          new Date().toISOString(),
+        pending: true,
+        user: {
+          _id: user?._id,
+          userName:
+            user?.userName,
+          profilePic:
+            user?.profilePic,
+        },
+      };
+
+      // optimistic update
+      onOptimisticAdd(
+        postId,
+        optimisticComment
+      );
+
+      setText("");
+
+      setPosting(true);
+
+      try {
+
+        await API.post(
+          `/posts/${postId}/comment`,
+          {
+            text: trimmed,
+            clientId: tempId,
+          }
+        );
+
+      } catch (error) {
+
+        console.error(error);
+
+        onRollback(
+          postId,
+          tempId
+        );
+
+        toast.error(
+          error.response?.data
+            ?.message ||
+          "Comment failed"
+        );
+
+      } finally {
+
+        setPosting(false);
+      }
+
+    }, [
+      text,
+      posting,
+      postId,
+      user,
+      onOptimisticAdd,
+      onRollback,
+    ]);
+
+  // =========================
+  // TIME FORMAT
+  // =========================
+  const formatTime = (
+    date
+  ) => {
+
+    return new Date(
+      date
+    ).toLocaleTimeString(
+      [],
+      {
+        hour: "2-digit",
+        minute: "2-digit",
+      }
+    );
   };
 
   return (
-    <div className="fixed inset-0 bg-black/60 flex justify-center items-end z-50 backdrop-blur-sm" onClick={onClose}>
-      <div 
-        className="bg-white w-full max-w-md rounded-t-2xl p-4 h-[80vh] flex flex-col shadow-2xl" 
-        onClick={(e) => e.stopPropagation()}
+    <div
+      onClick={onClose}
+      className="
+        fixed inset-0 z-50
+        bg-black/60
+        backdrop-blur-sm
+        flex justify-center items-end
+      "
+    >
+
+      {/* MODAL */}
+      <div
+        onClick={(e) =>
+          e.stopPropagation()
+        }
+        className="
+          bg-white
+          w-full max-w-md
+          h-[82vh]
+          rounded-t-3xl
+          shadow-2xl
+          flex flex-col
+          animate-in slide-in-from-bottom
+        "
       >
-        <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4" />
-        
-        <div className="flex justify-between items-center mb-4 border-b pb-2">
-          <h2 className="font-bold text-lg">Comments</h2>
-          <button onClick={onClose} className="p-1 hover:bg-gray-100 rounded-full">✕</button>
-        </div>
 
-        {/* SCROLLABLE COMMENTS AREA */}
-        <div className="flex-1 overflow-y-auto space-y-4 px-1">
-          {comments.map((c) => (
-            <div key={c._id} className={`flex gap-3 items-start ${c.pending ? 'opacity-50' : ''}`}>
-              <img src={c.user?.profilePic} className="w-9 h-9 rounded-full object-cover border" alt="" />
-              {console.log(c)}
-              <div>
-                <p className="text-sm">
-                  <span className="font-bold mr-2">{c.user?.userName}</span>
-                  {c.text}
-                </p>
-                <p className="text-[10px] text-gray-400 mt-1">
-                  {new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                  {c.pending && " • Sending..."}
-                </p>
-              </div>
-            </div>
-          ))}
-        </div>
+        {/* HANDLE */}
+        <div className="
+          w-12 h-1.5
+          bg-zinc-300
+          rounded-full
+          mx-auto mt-3
+        " />
 
-        {/* INPUT SECTION */}
-        <div className="border-t pt-3 mt-2 flex gap-3 items-center">
-          <img src={user?.profilePic} className="w-9 h-9 rounded-full hidden sm:block" alt="" />
-          <input
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            placeholder="Add a comment..."
-            className="flex-1 bg-gray-100 rounded-full px-4 py-2 text-sm focus:outline-none"
-            onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
-          />
-          <button 
-            onClick={handleSubmit} 
-            disabled={!text.trim() || posting}
-            className="text-blue-500 font-bold text-sm disabled:opacity-30"
+        {/* HEADER */}
+        <div className="
+          flex items-center justify-between
+          px-5 py-4
+          border-b
+        ">
+
+          <h2 className="
+            text-lg font-bold
+          ">
+            Comments
+          </h2>
+
+          <button
+            onClick={onClose}
+            className="
+              w-9 h-9
+              rounded-full
+              hover:bg-zinc-100
+              flex items-center justify-center
+              transition
+            "
           >
-            Post
+            ✕
           </button>
+        </div>
+
+        {/* COMMENTS */}
+        <div className="
+          flex-1
+          overflow-y-auto
+          px-4 py-3
+          space-y-5
+        ">
+
+          {sortedComments.length ===
+            0 && (
+
+            <div className="
+              h-full
+              flex items-center justify-center
+              text-zinc-400
+              text-sm
+            ">
+              No comments yet
+            </div>
+          )}
+
+          {sortedComments.map(
+            (comment) => (
+
+              <div
+                key={comment._id}
+                className="
+                  flex gap-3
+                  items-start
+                "
+              >
+
+                {/* PROFILE */}
+                <img
+                  src={
+                    comment.user
+                      ?.profilePic ||
+                    "/default-avatar.png"
+                  }
+                  alt={
+                    comment.user
+                      ?.userName
+                  }
+                  loading="lazy"
+                  className="
+                    w-10 h-10
+                    rounded-full
+                    object-cover
+                    border
+                    flex-shrink-0
+                  "
+                />
+
+                {/* CONTENT */}
+                <div className="
+                  flex-1
+                ">
+
+                  <div className="
+                    bg-zinc-100
+                    rounded-2xl
+                    px-4 py-2.5
+                  ">
+
+                    <p className="
+                      font-semibold
+                      text-sm
+                    ">
+                      {
+                        comment.user
+                          ?.userName
+                      }
+                    </p>
+
+                    <p className="
+                      text-sm
+                      text-zinc-700
+                      break-words
+                    ">
+                      {
+                        comment.text
+                      }
+                    </p>
+                  </div>
+
+                  <div className="
+                    flex items-center gap-2
+                    mt-1 px-2
+                  ">
+
+                    <p className="
+                      text-[11px]
+                      text-zinc-400
+                    ">
+                      {formatTime(
+                        comment.createdAt
+                      )}
+                    </p>
+
+                    {comment.pending && (
+
+                      <Loader2 className="
+                        w-3 h-3
+                        animate-spin
+                        text-zinc-400
+                      " />
+                    )}
+                  </div>
+                </div>
+              </div>
+            )
+          )}
+        </div>
+
+        {/* INPUT */}
+        <div className="
+          border-t
+          p-4
+          bg-white
+        ">
+
+          <div className="
+            flex items-center gap-3
+          ">
+
+            <img
+              src={
+                user?.profilePic ||
+                "/default-avatar.png"
+              }
+              alt=""
+              className="
+                w-10 h-10
+                rounded-full
+                object-cover
+                border
+              "
+            />
+
+            <div className="
+              flex-1
+              flex items-center
+              bg-zinc-100
+              rounded-full
+              px-4
+            ">
+
+              <input
+                value={text}
+                maxLength={300}
+                onChange={(e) =>
+                  setText(
+                    e.target.value
+                  )
+                }
+                onKeyDown={(e) =>
+                  e.key === "Enter" &&
+                  handleSubmit()
+                }
+                placeholder="Add a comment..."
+                className="
+                  flex-1
+                  bg-transparent
+                  py-3
+                  text-sm
+                  outline-none
+                "
+              />
+
+              <button
+                disabled={
+                  !text.trim() ||
+                  posting
+                }
+                onClick={
+                  handleSubmit
+                }
+                className="
+                  disabled:opacity-40
+                  transition
+                "
+              >
+
+                {posting ? (
+
+                  <Loader2 className="
+                    w-5 h-5
+                    animate-spin
+                    text-zinc-500
+                  " />
+
+                ) : (
+
+                  <SendHorizontal className="
+                    w-5 h-5
+                    text-blue-500
+                  " />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* CHARACTER COUNT */}
+          <div className="
+            text-right
+            text-[11px]
+            text-zinc-400
+            mt-1 mr-2
+          ">
+            {text.length}/300
+          </div>
         </div>
       </div>
     </div>

@@ -1,8 +1,10 @@
 import cloudinary from "../config/cloudinary.js";
 import streamifier from "streamifier";
 import Post from "../models/post.js";
+import User from "../models/user.js";
 import { io } from "../app.js"
 
+// Post Controller 
 const postsController = async (req, res) => {
     try {
         const { title, caption } = req.body;
@@ -63,13 +65,11 @@ const postsController = async (req, res) => {
     }
 };
 
+// User Posts Controller 
 const getPostsController = async (req, res) => {
     try {
-        // console.log()
         const posts = await Post.find({ user: req.user.userId }).populate("user", "userName profilePic").lean();
         const userId = req.user.userId;
-        console.log(userId)
-        // console.log(posts)
         res.status(200).json({
             message: "Posts fetched successfully",
             posts
@@ -83,14 +83,15 @@ const getPostsController = async (req, res) => {
     }
 };
 
+// Feed Controller 
 const globalFeedController = async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = 10;
 
         const feed = await Post.find()
-            .populate("user", "userName profilePic")
-            .populate("comments.user", "userName profilePic") // ✅ ADD THIS
+            .populate("user", "userName profilePic followers")
+            .populate("comments.user", "userName profilePic ") // ✅ ADD THIS
             .sort({ createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit);
@@ -103,7 +104,10 @@ const globalFeedController = async (req, res) => {
             return {
                 ...post._doc,
                 likesCount: post.likes.length,
-                isLiked
+                isLiked,
+                isFollowing: post.user.followers?.some(
+                    id => id.toString() === req.user.userId.toString()
+                )
             };
         });
 
@@ -120,6 +124,7 @@ const globalFeedController = async (req, res) => {
     }
 };
 
+// Like Controller 
 const LikeController = async (req, res) => {
     try {
         const userId = req.user.userId;
@@ -175,40 +180,267 @@ const LikeController = async (req, res) => {
     }
 };
 
-
+// Comment Controller
 const commentController = async (req, res) => {
-    try {
-        const { postId } = req.params;
-        const userId = req.user.userId;
-        const { text, clientId } = req.body;
+  try {
 
-        if (!text?.trim()) return res.status(400).json({ message: "Comment required" });
+    const { postId } = req.params;
 
-        // Atomic push and return the updated post with one query
-        const updatedPost = await Post.findByIdAndUpdate(
-            postId,
-            { 
-                $push: { 
-                    comments: { user: userId, text, createdAt: new Date(), clientId } 
-                } 
-            },
-            { new: true } // Returns the document AFTER update
-        ).populate("comments.user", "userName profilePic");
+    const userId = req.user.userId;
 
-        const newComment = updatedPost.comments.at(-1); // Get the newly added one
+    const {
+      text,
+      clientId,
+    } = req.body;
 
-        // Emit to all users
-        io.emit("commentAdded", {
-            postId,
-            comment: newComment,
-            clientId
-        });
+    // =========================
+    // VALIDATION
+    // =========================
+    if (!text?.trim()) {
 
-        res.status(201).json({ comment: newComment });
-    } catch (error) {
-        res.status(500).json({ error: error.message });
+      return res.status(400).json({
+        success: false,
+        message: "Comment required",
+      });
     }
+
+    // =========================
+    // CREATE COMMENT
+    // =========================
+    const updatedPost =
+      await Post.findByIdAndUpdate(
+        postId,
+        {
+          $push: {
+            comments: {
+              user: userId,
+              text: text.trim(),
+              createdAt: new Date(),
+            },
+          },
+        },
+        {
+          new: true,
+        }
+      ).populate(
+        "comments.user",
+        "userName profilePic"
+      );
+
+    if (!updatedPost) {
+
+      return res.status(404).json({
+        success: false,
+        message: "Post not found",
+      });
+    }
+
+    // =========================
+    // GET NEW COMMENT
+    // =========================
+    const newComment =
+      updatedPost.comments.at(-1);
+
+    // =========================
+    // SOCKET EMIT
+    // =========================
+    io.emit("commentAdded", {
+      postId,
+      clientId,
+      comment: newComment,
+    });
+
+    // =========================
+    // RESPONSE
+    // =========================
+    return res.status(201).json({
+      success: true,
+      message: "Comment added",
+      comment: newComment,
+    });
+
+  } catch (error) {
+
+    console.error(error);
+
+    return res.status(500).json({
+      success: false,
+      message: "Internal server error",
+    });
+  }
 };
 
 
-export { postsController, getPostsController, LikeController, commentController, globalFeedController };
+// Follower Following Controller 
+const followController = async (req, res) => {
+    try {
+
+        const userId = req.user.userId;
+        const targetUserId = req.params.userId;
+
+        if (userId === targetUserId) {
+            return res.status(400).json({
+                success: false,
+                message: "You cannot follow yourself"
+            });
+        }
+
+        const [currentUser, targetUser] = await Promise.all([
+            User.findById(userId),
+            User.findById(targetUserId)
+        ]);
+
+        if (!currentUser || !targetUser) {
+            return res.status(404).json({
+                success: false,
+                message: "User not found"
+            });
+        }
+
+        const isFollowing = targetUser.followers.some(
+            id => id.toString() === userId.toString()
+        );
+        if (isFollowing) {
+
+            await Promise.all([
+                User.findByIdAndUpdate(targetUserId, {
+                    $pull: { followers: userId }
+                }),
+
+                User.findByIdAndUpdate(userId, {
+                    $pull: { following: targetUserId }
+                })
+            ]);
+
+        } else {
+
+            await Promise.all([
+                User.findByIdAndUpdate(targetUserId, {
+                    $addToSet: { followers: userId }
+                }),
+
+                User.findByIdAndUpdate(userId, {
+                    $addToSet: { following: targetUserId }
+                })
+            ]);
+        }
+
+        const newFollowState = !isFollowing;
+
+        io.emit("followUpdated", {
+            targetUserId,
+            followerId: userId,
+            isFollowing: newFollowState
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: newFollowState
+                ? "User followed successfully"
+                : "User unfollowed successfully"
+        });
+
+    } catch (error) {
+
+        console.error(error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+};
+
+const searchProfileController = async (req, res) => {
+    try {
+
+        const userId = req.user.userId;
+
+        let { query } = req.query;
+
+        // =========================
+        // VALIDATION
+        // =========================
+        if (!query || typeof query !== "string") {
+            return res.status(400).json({
+                success: false,
+                message: "Search query is required"
+            });
+        }
+
+        query = query.trim();
+
+        if (query.length < 2) {
+            return res.status(400).json({
+                success: false,
+                message: "Search query must be at least 2 characters"
+            });
+        }
+
+        // =========================
+        // ESCAPE REGEX
+        // =========================
+        const escapedQuery = query.replace(
+            /[.*+?^${}()|[\]\\]/g,
+            "\\$&"
+        );
+
+        const regex = new RegExp(escapedQuery, "i");
+
+        // =========================
+        // SEARCH USERS
+        // =========================
+        const users = await User.find({
+            _id: { $ne: userId }, // exclude self
+            $or: [
+                { userName: regex },
+                { email: regex }
+            ]
+        })
+            .select(
+                "userName email profilePic followers following"
+            )
+            .limit(10)
+            .lean();
+
+        // =========================
+        // FORMAT RESPONSE
+        // =========================
+        const formattedUsers = users.map((user) => ({
+            _id: user._id,
+            userName: user.userName,
+            email: user.email,
+            profilePic: user.profilePic,
+            followersCount: user.followers?.length || 0,
+            followingCount: user.following?.length || 0,
+            isFollowing: user.followers?.some(
+                (id) => id.toString() === userId.toString()
+            )
+        }));
+
+        return res.status(200).json({
+            success: true,
+            count: formattedUsers.length,
+            users: formattedUsers
+        });
+
+    } catch (error) {
+
+        console.error("Search Error:", error);
+
+        return res.status(500).json({
+            success: false,
+            message: "Internal server error"
+        });
+    }
+};
+
+export {
+    searchProfileController,
+    postsController,
+    getPostsController,
+    LikeController,
+    commentController,
+    globalFeedController,
+    followController
+};

@@ -2,15 +2,41 @@ import bcrypt from "bcryptjs";
 import User from "../models/user.js";
 import cloudinary from "../config/cloudinary.js";
 import streamifier from "streamifier";
+import Post from "../models/post.js";
 
 const getUserProfile = async (req, res) => {
-    const user = await User.findById(req.user.userId).select("-password");
+    try {
+        const loggedInUserId = req.user.userId;
+        const { userId } = req.params;
 
-    if (!user) {
-        return res.status(404).json({ message: "User not found" });
+        // if no param → show own profile
+        const targetUserId = userId || loggedInUserId;
+
+        // 🔥 get profile user
+        const user = await User.findById(targetUserId)
+            .select("userName profilePic bio followers following");
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        // 🔥 get posts of that user
+        const posts = await Post.find({ user: targetUserId })
+            .sort({ createdAt: -1 })
+            .select("image likes comments");
+
+        res.status(200).json({
+            user,
+            posts,
+            isOwnProfile: targetUserId === loggedInUserId,
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            message: "Error fetching profile",
+            error: error.message
+        });
     }
-
-    res.json({ user });
 };
 
 

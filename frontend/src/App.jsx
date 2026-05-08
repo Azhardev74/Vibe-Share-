@@ -1,34 +1,112 @@
-import React from "react"
-import { BrowserRouter, Routes, Route } from "react-router-dom"
+// import React from "react"
+// import { BrowserRouter, Routes, Route } from "react-router-dom"
 
-import Login from "./pages/auth/Login"
-import SignUp from "./pages/auth/SignUp"
-import Navigation from "./pages/Navigation"
-import Profile from "./pages/Profile"
-import Feed from "./pages/Feed"
+// import Login from "./pages/auth/Login"
+// import SignUp from "./pages/auth/SignUp"
+// import Navigation from "./pages/Navigation"
+// import Profile from "./pages/Profile"
+// import Feed from "./pages/Feed"
 
-import ProtectedRoutes from "./routes/ProtectedRoutes"
-import Home from "./pages/Home"
+// import ProtectedRoutes from "./routes/ProtectedRoutes"
+// import Home from "./pages/Home"
+
+// export default function App() {
+//   return (
+//     <BrowserRouter>
+//       <Navigation>
+//         <Routes>
+
+//           {/* 🔐 Protected Routes Group */}
+//           <Route element={<ProtectedRoutes />}>
+//             <Route path="/profile" element={<Profile />} />
+//             <Route path="/profile/:userId" element={<Profile />} />            <Route path="/feed" element={<Feed />} />
+//             <Route path="/" element={<Home />} />
+//           </Route>
+
+//           {/* 🌐 Public Routes */}
+//           <Route path="/login" element={<Login />} />
+//           <Route path="/signup" element={<SignUp />} />
+
+//         </Routes>
+//       </Navigation>
+//     </BrowserRouter>
+//   )
+// }
+
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+} from "react-router-dom";
+
+import Login from "./pages/auth/Login";
+import SignUp from "./pages/auth/SignUp";
+
+import Feed from "./pages/Feed";
+import Profile from "./pages/Profile";
+import Home from "./pages/Home";
+
+import Navigation from "./pages/Navigation";
+
+import ProtectedRoutes from "./routes/ProtectedRoutes";
 
 export default function App() {
+
   return (
     <BrowserRouter>
-      <Navigation>
-        <Routes>
 
-          {/* 🔐 Protected Routes Group */}
-          <Route element={<ProtectedRoutes />}>
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/feed" element={<Feed />} />
-            <Route path="/" element={<Home />} />
+      <Routes>
+
+        {/* =========================
+            PUBLIC ROUTES
+        ========================== */}
+        <Route
+          path="/login"
+          element={<Login />}
+        />
+
+        <Route
+          path="/signup"
+          element={<SignUp />}
+        />
+
+        {/* =========================
+            PROTECTED ROUTES
+        ========================== */}
+        <Route
+          element={<ProtectedRoutes />}
+        >
+
+          <Route
+            element={<Navigation />}
+          >
+
+            <Route
+              path="/"
+              element={<Home />}
+            />
+
+            <Route
+              path="/feed"
+              element={<Feed />}
+            />
+
+            <Route
+              path="/profile"
+              element={<Profile />}
+            />
+
+            <Route
+              path="/profile/:userId"
+              element={<Profile />}
+            />
+
           </Route>
 
-          {/* 🌐 Public Routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
+        </Route>
 
-        </Routes>
-      </Navigation>
+      </Routes>
+
     </BrowserRouter>
-  )
+  );
 }
